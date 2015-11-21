@@ -1,23 +1,17 @@
-// Package inmem stores key/value pairs in memory
-package inmem
+package registrar
 
-import (
-	"sync"
+import "sync"
 
-	"github.com/cpuguy83/registrar/stores"
-)
-
-var errNoSuchKey = stores.ErrNoSuchKey
-
-// New creates a new inmem store
-func New() stores.Store {
+// NewInmem creates a new inmem Registrar
+func NewInmem() Registrar {
 	return &inmem{
 		data:   make(map[string][]string),
 		valIdx: make(map[string]string),
 	}
 }
 
-// inmem stores k/v's in memory
+// inmem implements Registrar and stores everything in memory
+// inmem is safe for concurrent access
 type inmem struct {
 	data   map[string][]string
 	valIdx map[string]string
@@ -31,25 +25,20 @@ func (m *inmem) Get(key string) ([]string, error) {
 
 	v, exists := m.data[key]
 	if !exists {
-		return nil, errNoSuchKey
+		return nil, ErrNoSuchKey
 	}
 	return v, nil
 }
 
-// Exists returns a bool indicating if the value exists for any stored key
-func (m *inmem) Exists(value string) bool {
+// Reserve sets the value to the given key
+func (m *inmem) Reserve(name, key string) error {
 	m.mu.Lock()
-	_, exists := m.valIdx[value]
-	m.mu.Unlock()
-	return exists
-}
-
-// Set sets the value to the given key
-func (m *inmem) Set(key, value string) error {
-	m.mu.Lock()
-	m.data[key] = append(m.data[key], value)
-	m.valIdx[value] = key
-	m.mu.Unlock()
+	defer m.mu.Unlock()
+	if _, exists := m.valIdx[name]; exists {
+		return ErrNameReserved
+	}
+	m.data[key] = append(m.data[key], name)
+	m.valIdx[name] = key
 	return nil
 }
 
@@ -65,24 +54,24 @@ func (m *inmem) Delete(key string) error {
 	return nil
 }
 
-// DeleteValue deletes the stored value
-func (m *inmem) DeleteValue(value string) error {
+// Release deletes the stored value
+func (m *inmem) Release(name string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	key, exists := m.valIdx[value]
+	key, exists := m.valIdx[name]
 	if !exists {
 		return nil
 	}
 
-	for i, v := range m.data[value] {
-		if v != value {
+	for i, v := range m.data[name] {
+		if v != name {
 			continue
 		}
 		m.data[key] = append(m.data[key][:i], m.data[key][i+1:]...)
 		break
 	}
 
-	delete(m.valIdx, value)
+	delete(m.valIdx, name)
 	if len(m.data[key]) == 0 {
 		delete(m.data, key)
 	}

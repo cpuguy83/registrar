@@ -1,13 +1,9 @@
 package registrar
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/cpuguy83/registrar/stores/inmem"
-)
-
-func newTestRegistrar() *Registrar {
-	return NewRegistrar(inmem.New())
+func newTestRegistrar() Registrar {
+	return NewInmem()
 }
 
 func TestReserve(t *testing.T) {
@@ -82,7 +78,7 @@ func TestGet(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(v) != 1 {
-		t.Fatal("expected 1 entry, got %d", len(v))
+		t.Fatalf("expected 1 entry, got %d", len(v))
 	}
 	if v[0] != "val" {
 		t.Fatalf("expected `val`, got: %s", v)
