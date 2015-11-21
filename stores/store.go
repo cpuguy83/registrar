@@ -18,4 +18,6 @@ type Store interface {
 	Delete(key string) error
 	// DeleteValue deletes the stored value
 	DeleteValue(value string) error
+	// List lists all items in the store
+	List() (map[string][]string, error)
 }

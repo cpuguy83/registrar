@@ -88,3 +88,17 @@ func (m *inmem) DeleteValue(value string) error {
 	}
 	return nil
 }
+
+// List lists all stored items
+func (m *inmem) List() (map[string][]string, error) {
+	m.mu.Lock()
+
+	// copy items into new map
+	ls := make(map[string][]string)
+	for k, v := range m.data {
+		ls[k] = v
+	}
+
+	m.mu.Unlock()
+	return ls, nil
+}

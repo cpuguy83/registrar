@@ -45,21 +45,32 @@ func (r *Registrar) Reserve(name, key string) error {
 // Once released, a name can be be reserved again
 func (r *Registrar) Release(name string) error {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.store.DeleteValue(name)
+	err := r.store.DeleteValue(name)
+	r.mu.Unlock()
+	return err
 }
 
 // Delete removes all reservations for the passed in key.
 // All names reserved to this key are released.
 func (r *Registrar) Delete(key string) error {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.store.Delete(key)
+	err := r.store.Delete(key)
+	r.mu.Unlock()
+	return err
 }
 
 // Get lists all the reserved names for the given key
 func (r *Registrar) Get(key string) ([]string, error) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.store.Get(key)
+	ls, err := r.store.Get(key)
+	r.mu.Unlock()
+	return ls, err
+}
+
+// List lists all reserved names in the store
+func (r *Registrar) List() (map[string][]string, error) {
+	r.mu.Lock()
+	ls, err := r.store.List()
+	r.mu.Unlock()
+	return ls, err
 }
